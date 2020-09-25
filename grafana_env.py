@@ -77,8 +77,9 @@ def convert_sub_panels(panel: dict, dev_json: dict) -> [dict]:
 
 def main():
     parser = argparse.ArgumentParser(description='Convert a production Grafana JSON model to the development version.')
-    parser.add_argument('--prod_json', type=lambda x: is_valid_file(parser, x), metavar='PROD_FILE', required=True, help='File path to production JSON')
-    parser.add_argument('--dev_json', type=lambda x: is_valid_file(parser, x), metavar='DEV_FILE', required=True, help='File path to development JSON')
+    parser.add_argument('--prod_json', '-p', type=lambda x: is_valid_file(parser, x), metavar='PROD_FILE', required=True, help='File path to production JSON')
+    parser.add_argument('--dev_json', '-d', type=lambda x: is_valid_file(parser, x), metavar='DEV_FILE', required=True, help='File path to development JSON')
+    parser.add_argument('--raw', action='store_true', help='Option to print output JSON unformatted')
     args = parser.parse_args()
 
     prod_json = json.load(args.prod_json)
@@ -94,7 +95,12 @@ def main():
         new_panels.append(convert_panel(panel, dev_json))
 
     result_json['panels'] = new_panels
-    print(json.dumps(result_json, indent=4))
+    if args.raw:
+        result_json = json.dumps(result_json)
+    else:
+        result_json = json.dumps(result_json, indent=4)
+
+    print(result_json)
 
 
 if __name__ == '__main__':
