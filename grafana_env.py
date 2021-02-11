@@ -48,42 +48,34 @@ def copy_panel_alerts(panel: dict, dev_json: dict, sub_panel: dict = None) -> di
 
     return panel
 
-def convert_panel(panel: dict, dev_json: dict) -> dict:
+def convert_panel(panel: dict, dev_json: dict, separate_alerts: bool = False) -> dict:
     """Converts a panel dict to the dev version, replacing the alert if necessary."""
     panel = delete_keys(panel)
 
-    # Copy alert over if it has one
-    if 'alert' in panel:
+    # Copy dev alert over if it has one
+    if separate_alerts and 'alert' in panel:
         panel = copy_panel_alerts(panel, dev_json)
     
     if 'panels' in panel:
-        panel['panels'] = convert_sub_panels(panel, dev_json)
+        panel['panels'] = convert_sub_panels(panel, dev_json, separate_alerts=separate_alerts)
 
     return panel
 
-def convert_sub_panels(panel: dict, dev_json: dict) -> [dict]:
+def convert_sub_panels(panel: dict, dev_json: dict, separate_alerts: bool = False) -> [dict]:
     """Returns the converted subpanels for the given panel."""
     # Precondition: panel has 'panels' key
     sub_panels = []
     for sub_panel in panel['panels']:
         sub_panel = delete_keys(sub_panel)
 
-        if 'alert' in panel:
+        if separate_alerts and 'alert' in panel:
             sub_panel = copy_panel_alerts(panel, dev_json, sub_panel)
 
         sub_panels.append(sub_panel)
 
     return sub_panels
 
-def main():
-    parser = argparse.ArgumentParser(description='Convert a production Grafana JSON model to the development version.')
-    parser.add_argument('--prod_json', '-p', type=lambda x: is_valid_file(parser, x), metavar='PROD_FILE', required=True, help='File path to production JSON')
-    parser.add_argument('--dev_json', '-d', type=lambda x: is_valid_file(parser, x), metavar='DEV_FILE', required=True, help='File path to development JSON')
-    parser.add_argument('--raw', action='store_true', help='Option to print output JSON unformatted')
-    args = parser.parse_args()
-
-    prod_json = json.load(args.prod_json)
-    dev_json = json.load(args.dev_json)
+def convert(prod_json: dict, dev_json: dict, separate_alerts: bool = False) -> dict:
     result_json = prod_json
 
     # Delete unwanted keys
@@ -92,9 +84,23 @@ def main():
     # Convert prod panels to dev panels
     new_panels = []
     for panel in result_json['panels']:
-        new_panels.append(convert_panel(panel, dev_json))
+        new_panels.append(convert_panel(panel, dev_json, separate_alerts=separate_alerts))
 
     result_json['panels'] = new_panels
+    return result_json
+
+def main():
+    parser = argparse.ArgumentParser(description='Convert a production Grafana JSON model to the development version.')
+    parser.add_argument('--prod_json', '-p', type=lambda x: is_valid_file(parser, x), metavar='PROD_FILE', required=True, help='File path to production JSON')
+    parser.add_argument('--dev_json', '-d', type=lambda x: is_valid_file(parser, x), metavar='DEV_FILE', required=True, help='File path to development JSON')
+    parser.add_argument('--separate-alerts', '-s', action='store_true', help='Separate alerts across environments.')
+    parser.add_argument('--raw', action='store_true', help='Print output JSON unformatted')
+    args = parser.parse_args()
+
+    prod_json = json.load(args.prod_json)
+    dev_json = json.load(args.dev_json)
+    result_json = convert(prod_json, dev_json, separate_alerts=args.separate_alerts)
+
     if args.raw:
         result_json = json.dumps(result_json)
     else:

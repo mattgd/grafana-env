@@ -1,5 +1,5 @@
 # grafana-env
-Keep consistent copies of Grafana dashboards between prod and dev environments.
+Keep consistent copies of Grafana dashboards between production and development environments.
 
 To run, create JSON files of your production and development Grafana JSON models. Then,
 run the following command. Note: result will be output to `stdout`:

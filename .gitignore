@@ -1,5 +1,9 @@
 # Example data
 data/
 
+# Lamdba function packaging
+package/
+function.zip
+
 # macOS
 .DS_Store
