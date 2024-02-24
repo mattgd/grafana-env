@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-import sys
+from typing import List
 
 DELETE_KEYS = ['id', 'uid', 'version', 'gnetId', 'iteration']
 
@@ -13,13 +13,20 @@ def is_valid_file(parser, arg):
     else:
         return open(arg, 'r')  # return an open file handle
 
-def get_dev_json_panel(panelTitle: str, dev_panels: [dict]) -> dict:
+def get_dev_json_panel(panel_title: str, dev_panels: List[dict]) -> dict:
     """Gets the dev_json version of the panel."""
     for panel in dev_panels:
-        if panel['title'] == panelTitle:
+        if panel['title'] == panel_title:
             return panel
 
     return None
+
+def convert_sources(panel: dict, datasource_mapping: dict) -> dict:
+    datasource = panel.get('datasource')
+    if datasource:
+        panel['datasource'] = datasource_mapping.get(datasource)
+
+    return panel
 
 def delete_keys(json: dict) -> dict:
     """Deletes keys from DELETE_KEYS found in JSON"""
@@ -61,7 +68,7 @@ def convert_panel(panel: dict, dev_json: dict, separate_alerts: bool = False) ->
 
     return panel
 
-def convert_sub_panels(panel: dict, dev_json: dict, separate_alerts: bool = False) -> [dict]:
+def convert_sub_panels(panel: dict, dev_json: dict, separate_alerts: bool = False) -> List[dict]:
     """Returns the converted subpanels for the given panel."""
     # Precondition: panel has 'panels' key
     sub_panels = []
@@ -93,6 +100,7 @@ def main():
     parser = argparse.ArgumentParser(description='Convert a production Grafana JSON model to the development version.')
     parser.add_argument('--prod_json', '-p', type=lambda x: is_valid_file(parser, x), metavar='PROD_FILE', required=True, help='File path to production JSON')
     parser.add_argument('--dev_json', '-d', type=lambda x: is_valid_file(parser, x), metavar='DEV_FILE', required=True, help='File path to development JSON')
+    parser.add_argument('--datasource_mapping', '-m', type=lambda x: is_valid_file(parser, x), metavar='DATASOURCE_MAPPING_FILE', required=True, help='File path to datasource mapping')
     parser.add_argument('--separate-alerts', '-s', action='store_true', help='Separate alerts across environments.')
     parser.add_argument('--raw', action='store_true', help='Print output JSON unformatted')
     args = parser.parse_args()
